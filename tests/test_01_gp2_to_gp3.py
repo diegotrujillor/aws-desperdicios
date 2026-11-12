@@ -120,9 +120,8 @@ def test_volume_is_skipped_when_gp3_would_not_be_cheaper(session):
         "fuentes": {"X": {"publicacion": "2026-01-01T00:00:00Z"}},
         "precios": {
             "us-east-1": {
-                "ebs_gp2_gb_mes": {"usd": 0.05, "fuente": "X"},
-                "ebs_gp3_gb_mes": {"usd": 0.08, "fuente": "X"},
-                "ebs_gp3_iops_mes": {"usd": 0.005, "fuente": "X"},
+                "ebs_gb_mes": {"gp2": {"usd": 0.05, "fuente": "X"}, "gp3": {"usd": 0.08, "fuente": "X"}},
+                "ebs_iops_mes": {"gp3": {"usd": 0.005, "fuente": "X"}},
                 "ebs_gp3_mibps_mes": {"usd": 0.04, "fuente": "X"},
             }
         },

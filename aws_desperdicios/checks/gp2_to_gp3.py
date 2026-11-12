@@ -6,11 +6,12 @@ gp2 performance (AWS EBS docs, "General Purpose SSD volumes"):
 gp3 includes 3,000 IOPS and 125 MiB/s; extra IOPS and throughput are billed separately.
 """
 import argparse
-import shlex
 
 import boto3
 
 from aws_desperdicios.cli import CheckDefinition, run_check
+from aws_desperdicios.commands import aws_cli
+from aws_desperdicios.ebs import GP3_BASELINE_IOPS, GP3_BASELINE_THROUGHPUT_MIBPS, volume_monthly_cost
 from aws_desperdicios.pricing import PriceCatalog
 from aws_desperdicios.report import Finding
 
@@ -22,8 +23,6 @@ GP2_MAX_IOPS = 16_000
 GP2_SMALL_VOLUME_MAX_GIB = 170
 GP2_SMALL_THROUGHPUT_MIBPS = 128
 GP2_LARGE_THROUGHPUT_MIBPS = 250
-GP3_BASELINE_IOPS = 3_000
-GP3_BASELINE_THROUGHPUT_MIBPS = 125
 
 STATE_LABELS = {"in-use": "en uso", "available": "sin adjuntar"}
 
@@ -44,25 +43,19 @@ def gp3_equivalent(size_gib: int) -> tuple[int, int]:
 
 def monthly_savings(size_gib: int, region: str, prices: PriceCatalog) -> float | None:
     """gp2 cost minus equivalent gp3 cost, in USD/month. None if any price is unknown."""
-    keys = ("ebs_gp2_gb_mes", "ebs_gp3_gb_mes", "ebs_gp3_iops_mes", "ebs_gp3_mibps_mes")
-    gp2_gb, gp3_gb, gp3_iops, gp3_mibps = (prices.get(key, region) for key in keys)
-    if None in (gp2_gb, gp3_gb, gp3_iops, gp3_mibps):
-        return None
     iops, throughput = gp3_equivalent(size_gib)
-    gp3_cost = (
-        size_gib * gp3_gb.usd
-        + (iops - GP3_BASELINE_IOPS) * gp3_iops.usd
-        + (throughput - GP3_BASELINE_THROUGHPUT_MIBPS) * gp3_mibps.usd
-    )
-    return round(size_gib * gp2_gb.usd - gp3_cost, 2)
+    gp2_cost = volume_monthly_cost("gp2", size_gib, 0, 0, region, prices)
+    gp3_cost = volume_monthly_cost("gp3", size_gib, iops, throughput, region, prices)
+    if gp2_cost is None or gp3_cost is None:
+        return None
+    return round(gp2_cost - gp3_cost, 2)
 
 
 def suggested_command(volume_id: str, region: str, size_gib: int, profile: str | None) -> str:
     iops, throughput = gp3_equivalent(size_gib)
-    profile_flag = f"--profile {shlex.quote(profile)} " if profile else ""
-    return (
-        f"aws ec2 modify-volume {profile_flag}--region {region} --volume-id {volume_id} "
-        f"--volume-type gp3 --iops {iops} --throughput {throughput}"
+    return aws_cli(
+        "ec2", "modify-volume", region, profile,
+        "--volume-id", volume_id, "--volume-type", "gp3", "--iops", str(iops), "--throughput", str(throughput),
     )
 
 
