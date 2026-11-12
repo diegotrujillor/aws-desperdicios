@@ -1,0 +1,15 @@
+[project]
+name = "aws-desperdicios"
+version = "0.1.0"
+description = "Read-only scripts that detect common AWS cost waste and estimate monthly savings."
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Diego Trujillo" }]
+dependencies = ["boto3>=1.34"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=aws_desperdicios --cov-report=term-missing --cov-fail-under=80"
+
+[tool.coverage.run]
+branch = true
