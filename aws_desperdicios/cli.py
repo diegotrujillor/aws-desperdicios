@@ -22,6 +22,9 @@ EXIT_OK = 0
 EXIT_PARTIAL = 1  # some regions failed (usually a missing permission)
 EXIT_FATAL = 2  # nothing could be scanned
 
+# Permissions used by the shared driver itself (region discovery and prices).
+CORE_IAM_ACTIONS = ("ec2:DescribeRegions", "pricing:GetProducts")
+
 ScanFn = Callable[[boto3.Session, str, PriceCatalog, argparse.Namespace], list[Finding]]
 
 

@@ -60,7 +60,7 @@ def render_json(report: Report) -> str:
 
 
 def render_table(report: Report) -> str:
-    sections = [report.title, "=" * len(report.title), _findings_section(report)]
+    sections = [f"{report.title}\n{'=' * len(report.title)}", _findings_section(report)]
     sections += _optional_sections(report)
     return "\n\n".join(sections) + "\n"
 
