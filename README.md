@@ -294,4 +294,4 @@ Las pruebas usan [moto](https://github.com/getmoto/moto) para simular AWS y nunc
 
 ---
 
-Estoy armando un kit con más desperdicios y su automatización. Si te interesa, pídelo aquí: [ENLACE_KIT]
+Estoy armando un kit con más desperdicios y su automatización. Si te interesa, pídelo aquí: https://docs.google.com/forms/d/e/1FAIpQLSd101aqEik32UXLvZ0tSl_t-Nk1ln0to7AU8RfdPfhwluvgPA/viewform
