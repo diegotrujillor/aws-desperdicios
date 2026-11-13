@@ -106,10 +106,10 @@ def _money(value: float | None) -> str:
 
 
 def _format_table(headers: tuple[str, ...], rows: list[tuple[str, ...]]) -> str:
-    widths = [max(len(str(cell)) for cell in column) for column in zip(headers, *rows)]
+    widths = [max(len(str(cell)) for cell in column) for column in zip(headers, *rows, strict=True)]
 
     def line(cells):
-        return "  ".join(str(cell).ljust(width) for cell, width in zip(cells, widths)).rstrip()
+        return "  ".join(str(cell).ljust(width) for cell, width in zip(cells, widths, strict=True)).rstrip()
 
     separator = "  ".join("-" * width for width in widths)
     return "\n".join([line(headers), separator, *(line(row) for row in rows)])

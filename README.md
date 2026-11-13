@@ -20,13 +20,13 @@ Si es tu primera vez, empieza por la [guía de uso](docs/guia-de-uso.md): explic
 
 ## Los desperdicios
 
-| # | Desperdicio | Script | Tipo de ahorro | Estado |
-|---|---|---|---|---|
-| 1 | Volúmenes EBS gp2 que podrían ser gp3 | `scripts/01_gp2_a_gp3.py` | exacto | disponible |
-| 2 | Volúmenes EBS sin adjuntar y snapshots antiguos | `scripts/02_volumenes_y_snapshots.py` | exacto (volúmenes) y máximo (snapshots) | disponible |
-| 3 | Entornos de desarrollo y pruebas encendidos 24/7 | `scripts/03_entornos_dev_24x7.py` | exacto (según el horario supuesto) | disponible |
-| 4 | Grupos de logs de CloudWatch con retención infinita | `scripts/04_logs_sin_retencion.py` | máximo | disponible |
-| 5 | NAT Gateway procesando tráfico hacia S3/DynamoDB | `scripts/05_nat_sin_endpoints.py` | máximo | disponible |
+| # | Desperdicio | Script | Tipo de ahorro |
+|---|---|---|---|
+| 1 | Volúmenes EBS gp2 que podrían ser gp3 | `scripts/01_gp2_a_gp3.py` | exacto |
+| 2 | Volúmenes EBS sin adjuntar y snapshots antiguos | `scripts/02_volumenes_y_snapshots.py` | exacto (volúmenes) y máximo (snapshots) |
+| 3 | Entornos de desarrollo y pruebas encendidos 24/7 | `scripts/03_entornos_dev_24x7.py` | exacto (según el horario supuesto) |
+| 4 | Grupos de logs de CloudWatch con retención infinita | `scripts/04_logs_sin_retencion.py` | máximo |
+| 5 | NAT Gateway procesando tráfico hacia S3/DynamoDB | `scripts/05_nat_sin_endpoints.py` | máximo |
 
 ## Requisitos
 

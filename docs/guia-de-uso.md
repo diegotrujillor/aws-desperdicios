@@ -128,6 +128,14 @@ Para guardar el resultado y procesarlo después:
 python scripts/01_gp2_a_gp3.py --profile desperdicios --json > gp2-a-gp3.json
 ```
 
+Para correr los cinco scripts y guardar cada resultado:
+
+```bash
+for script in scripts/0*.py; do
+  python "$script" --profile desperdicios --json > "$(basename "$script" .py).json"
+done
+```
+
 `--help` muestra todas las opciones de cada script.
 
 ## 6. Lee el resultado
@@ -210,6 +218,9 @@ No. Solo leen. La política mínima tampoco permitiría escribir.
 
 **¿Por qué el ahorro no coincide con mi factura?**
 Los scripts usan precios on-demand de lista. Si tienes Savings Plans, Reserved Instances, descuentos por volumen o créditos, tu ahorro real puede ser menor.
+
+**¿Cuesta algo ejecutarlos?**
+Los scripts 1 a 4 solo usan llamadas `Describe*` y `pricing:GetProducts`. El script 5 además lee métricas con `GetMetricStatistics` (2 consultas por NAT Gateway), y CloudWatch cobra esas solicitudes: USD 0.01 por cada 1.000 en us-east-1, según el AWS Price List.
 
 **¿Revisa regiones que no tengo habilitadas?**
 No. Sin `--region`, revisa solo las regiones habilitadas en la cuenta.

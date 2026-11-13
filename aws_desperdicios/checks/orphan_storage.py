@@ -74,7 +74,8 @@ def _snapshot_findings(
 
 def _images_by_snapshot(ec2) -> dict[str, str]:
     """snapshot id -> id of an AMI owned by this account that uses it."""
-    images = ec2.describe_images(Owners=["self"])["Images"]
+    pages = ec2.get_paginator("describe_images").paginate(Owners=["self"])
+    images = [image for page in pages for image in page["Images"]]
     return {
         mapping["Ebs"]["SnapshotId"]: image["ImageId"]
         for image in images
