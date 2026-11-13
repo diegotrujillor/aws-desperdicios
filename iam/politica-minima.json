@@ -10,6 +10,7 @@
         "ec2:DescribeRegions",
         "ec2:DescribeSnapshots",
         "ec2:DescribeVolumes",
+        "logs:DescribeLogGroups",
         "pricing:GetProducts",
         "rds:DescribeDBInstances"
       ],

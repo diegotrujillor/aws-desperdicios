@@ -179,6 +179,12 @@ Para `scripts/03_entornos_dev_24x7.py`:
 - Antes de detener algo, confirma con el equipo que nadie lo usa fuera de horario (pipelines nocturnos, pruebas programadas, otras zonas horarias).
 - El comando sugerido apaga una vez. Para un horario permanente necesitas una automatización: por ejemplo, reglas de Amazon EventBridge Scheduler o AWS Instance Scheduler.
 
+Para `scripts/04_logs_sin_retencion.py`:
+
+- La retención borra de forma permanente los eventos más antiguos que el plazo elegido.
+- Antes de aplicarla, revisa si alguna norma (auditoría, contratos, regulación) exige conservar esos logs. Si es así, expórtalos a S3 y usa una clase de almacenamiento de bajo costo.
+- Elige la retención con `--retencion-dias` para que el comando sugerido ya la incluya.
+
 ## 8. Errores comunes
 
 | Mensaje | Causa | Solución |

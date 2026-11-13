@@ -25,7 +25,7 @@ Si es tu primera vez, empieza por la [guía de uso](docs/guia-de-uso.md): explic
 | 1 | Volúmenes EBS gp2 que podrían ser gp3 | `scripts/01_gp2_a_gp3.py` | exacto | disponible |
 | 2 | Volúmenes EBS sin adjuntar y snapshots antiguos | `scripts/02_volumenes_y_snapshots.py` | exacto (volúmenes) y máximo (snapshots) | disponible |
 | 3 | Entornos de desarrollo y pruebas encendidos 24/7 | `scripts/03_entornos_dev_24x7.py` | exacto (según el horario supuesto) | disponible |
-| 4 | Grupos de logs de CloudWatch con retención infinita | — | máximo | en desarrollo |
+| 4 | Grupos de logs de CloudWatch con retención infinita | `scripts/04_logs_sin_retencion.py` | máximo | disponible |
 | 5 | NAT Gateway procesando tráfico hacia S3/DynamoDB | — | máximo | en desarrollo |
 
 ## Requisitos
@@ -179,6 +179,31 @@ Las claves y los valores se comparan sin distinguir mayúsculas.
 - AWS vuelve a encender automáticamente una base RDS o un clúster Aurora detenidos después de 7 días.
 - El script no mide el uso real del recurso: se basa en las etiquetas y en el horario que indiques.
 
+### 4. Grupos de logs de CloudWatch con retención infinita
+
+```bash
+python scripts/04_logs_sin_retencion.py --profile mi-perfil
+python scripts/04_logs_sin_retencion.py --profile mi-perfil --retencion-dias 90
+```
+
+Opción propia:
+
+| Opción | Qué hace | Valor por defecto |
+|---|---|---|
+| `--retencion-dias N` | Retención que se pone en el comando sugerido. Solo acepta los valores que admite CloudWatch Logs (1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1096, 1827, 2192, 2557, 2922, 3288, 3653). | 30 |
+
+**Qué detecta.** Grupos de logs sin política de retención, que la consola muestra como *Never expire*. Se ordenan de mayor a menor tamaño. Los grupos de clase *Delivery* se omiten porque AWS administra su retención.
+
+**Por qué es un desperdicio.** Por defecto, CloudWatch Logs guarda los datos para siempre y cobra el almacenamiento cada mes. Es común en funciones Lambda y contenedores, que crean su grupo sin retención.
+
+**Cómo calcula el ahorro (máximo).** Tamaño almacenado del grupo (campo `storedBytes`) × precio de almacenamiento por GB-mes de la clase Standard. Es un tope, por tres razones:
+
+- Una retención de N días solo borra lo que tenga más de N días, y las APIs de solo lectura no muestran qué parte de los datos es más antigua.
+- Los grupos *Infrequent Access* pueden tener un precio de almacenamiento menor.
+- Tu factura puede mostrar un volumen distinto del que reporta `storedBytes`.
+
+Aplicar una retención borra datos de forma permanente. Si debes conservarlos, expórtalos antes a S3.
+
 ## Cómo se calcula el ahorro
 
 **Tipo de ahorro.** Cada hallazgo indica uno de dos tipos:
@@ -208,6 +233,7 @@ Archivo: [`iam/politica-minima.json`](iam/politica-minima.json). Contiene exacta
 | `ec2:DescribeImages` | Script 2: saber qué snapshots usa una AMI propia. |
 | `ec2:DescribeInstances` | Script 3: listar instancias EC2 y sus etiquetas. |
 | `rds:DescribeDBInstances` | Script 3: listar instancias RDS y sus etiquetas. |
+| `logs:DescribeLogGroups` | Script 4: listar grupos de logs, su retención y su tamaño. |
 | `pricing:GetProducts` | Consultar precios en la AWS Pricing API. Es opcional: sin él se usa la tabla local. |
 
 Para aplicarla, usa el archivo tal cual; no copies la política desde este README.
