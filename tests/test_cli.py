@@ -14,7 +14,6 @@ def finding(region):
         detail="detalle",
         monthly_savings_usd=1.5,
         savings_kind="máximo",
-        suggested_command=None,
     )
 
 

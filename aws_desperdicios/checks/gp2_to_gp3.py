@@ -88,7 +88,7 @@ def _finding(volume: dict, region: str, prices: PriceCatalog, args: argparse.Nam
         detail=f"{size} GiB gp2, {state} -> gp3 {iops} IOPS / {throughput} MiB/s",
         monthly_savings_usd=savings,
         savings_kind="exacto",
-        suggested_command=suggested_command(volume["VolumeId"], region, size, args.profile),
+        suggested_commands=(suggested_command(volume["VolumeId"], region, size, args.profile),),
     )
 
 

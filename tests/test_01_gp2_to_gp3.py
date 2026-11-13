@@ -80,9 +80,9 @@ def test_suggested_command_preserves_performance_and_profile(session, local_pric
 
     [finding] = scan(session, "sa-east-1", local_prices, args(profile="prod"))
 
-    assert finding.suggested_command == (
+    assert finding.suggested_commands == (
         f"aws ec2 modify-volume --profile prod --region sa-east-1 --volume-id {volume} "
-        "--volume-type gp3 --iops 3000 --throughput 128"
+        "--volume-type gp3 --iops 3000 --throughput 128",
     )
 
 

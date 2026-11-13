@@ -13,7 +13,7 @@ def sample_report(**overrides):
                 detail="500 GiB gp2",
                 monthly_savings_usd=10.0,
                 savings_kind="exacto",
-                suggested_command="aws ec2 modify-volume --volume-id vol-111",
+                suggested_commands=("aws ec2 modify-volume --volume-id vol-111",),
             ),
             Finding(
                 region="sa-east-1",
@@ -21,7 +21,6 @@ def sample_report(**overrides):
                 detail="20 GiB gp2",
                 monthly_savings_usd=None,
                 savings_kind="exacto",
-                suggested_command=None,
             ),
         ),
         errors=(
@@ -73,9 +72,15 @@ def test_json_is_machine_readable_and_complete():
         "detalle": "500 GiB gp2",
         "ahorro_mensual_usd": 10.0,
         "tipo_ahorro": "exacto",
-        "comando_sugerido": "aws ec2 modify-volume --volume-id vol-111",
+        "comandos_sugeridos": ["aws ec2 modify-volume --volume-id vol-111"],
     }
     assert data["hallazgos"][1]["ahorro_mensual_usd"] is None
     assert len(data["errores"]) == 2
     assert data["notas"] == ["Supuesto de ejemplo."]
     assert data["fuentes_de_precios"] == ["AWS Pricing API (consultada 2026-11-12)"]
+
+
+def test_identical_commands_are_listed_once():
+    shared = Finding("us-east-1", "db-1", "d", 1.0, "exacto", ("aws rds stop-db-cluster --db-cluster-identifier c",))
+    report = sample_report(findings=(shared, Finding("us-east-1", "db-2", "d", 1.0, "exacto", shared.suggested_commands)))
+    assert render_table(report).count("stop-db-cluster") == 1

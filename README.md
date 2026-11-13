@@ -115,7 +115,7 @@ Con `--json`, cada hallazgo tiene esta forma:
   "detalle": "1000 GiB gp2, sin adjuntar -> gp3 3000 IOPS / 250 MiB/s",
   "ahorro_mensual_usd": 15.0,
   "tipo_ahorro": "exacto",
-  "comando_sugerido": "aws ec2 modify-volume --region us-east-1 --volume-id vol-7f74f19bd8b858bf0 --volume-type gp3 --iops 3000 --throughput 250"
+  "comandos_sugeridos": ["aws ec2 modify-volume --region us-east-1 --volume-id vol-7f74f19bd8b858bf0 --volume-type gp3 --iops 3000 --throughput 250"]
 }
 ```
 

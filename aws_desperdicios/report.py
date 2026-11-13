@@ -15,7 +15,7 @@ class Finding:
     detail: str
     monthly_savings_usd: float | None
     savings_kind: SavingsKind
-    suggested_command: str | None
+    suggested_commands: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -48,7 +48,7 @@ def render_json(report: Report) -> str:
                 "detalle": f.detail,
                 "ahorro_mensual_usd": f.monthly_savings_usd,
                 "tipo_ahorro": f.savings_kind,
-                "comando_sugerido": f.suggested_command,
+                "comandos_sugeridos": list(f.suggested_commands),
             }
             for f in report.findings
         ],
@@ -78,7 +78,8 @@ def _findings_section(report: Report) -> str:
 
 def _optional_sections(report: Report) -> list[str]:
     sections = []
-    commands = [f.suggested_command for f in report.findings if f.suggested_command]
+    # Several findings can share a command (e.g. Aurora instances of one cluster).
+    commands = list(dict.fromkeys(c for f in report.findings for c in f.suggested_commands))
     if commands:
         sections.append(
             "Comandos sugeridos (no se ejecutaron; revísalos antes de usarlos):\n"
