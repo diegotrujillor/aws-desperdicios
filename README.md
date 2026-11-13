@@ -24,7 +24,7 @@ Si es tu primera vez, empieza por la [guía de uso](docs/guia-de-uso.md): explic
 |---|---|---|---|---|
 | 1 | Volúmenes EBS gp2 que podrían ser gp3 | `scripts/01_gp2_a_gp3.py` | exacto | disponible |
 | 2 | Volúmenes EBS sin adjuntar y snapshots antiguos | `scripts/02_volumenes_y_snapshots.py` | exacto (volúmenes) y máximo (snapshots) | disponible |
-| 3 | Entornos de desarrollo y pruebas encendidos 24/7 | — | exacto (según horario supuesto) | en desarrollo |
+| 3 | Entornos de desarrollo y pruebas encendidos 24/7 | `scripts/03_entornos_dev_24x7.py` | exacto (según el horario supuesto) | disponible |
 | 4 | Grupos de logs de CloudWatch con retención infinita | — | máximo | en desarrollo |
 | 5 | NAT Gateway procesando tráfico hacia S3/DynamoDB | — | máximo | en desarrollo |
 
@@ -148,6 +148,37 @@ Opción propia:
 
 **Casos especiales.** Los snapshots que usa una AMI propia o que administra AWS Backup se listan sin comando y sin ahorro, con el motivo en el detalle: primero hay que desregistrar la AMI o ajustar el plan de respaldo. El detalle también avisa cuando el volumen de origen ya no existe.
 
+### 3. Entornos de desarrollo y pruebas encendidos 24/7
+
+```bash
+python scripts/03_entornos_dev_24x7.py --profile mi-perfil
+python scripts/03_entornos_dev_24x7.py --profile mi-perfil --horas-semana 50 --etiqueta Ambiente --valores dev,qa
+```
+
+Opciones propias:
+
+| Opción | Qué hace | Valor por defecto |
+|---|---|---|
+| `--horas-semana N` | Horas por semana que el entorno sí debe estar encendido (0 a 168). | 60 (12 h × 5 días) |
+| `--etiqueta CLAVE` | Clave de etiqueta que identifica el entorno. Se puede repetir. | `Environment`, `Env`, `Entorno`, `Stage` |
+| `--valores LISTA` | Valores, separados por coma, que indican un entorno no productivo. | `dev,development,desarrollo,test,testing,pruebas,qa,staging,stage,stg,sandbox,uat` |
+
+Las claves y los valores se comparan sin distinguir mayúsculas.
+
+**Qué detecta.** Instancias EC2 en estado `running` e instancias RDS en estado `available` que tienen una de esas etiquetas con uno de esos valores.
+
+**Por qué es un desperdicio.** Un entorno que solo se usa en horario laboral se cobra igual las noches y los fines de semana. Con 60 horas a la semana, está encendido sin uso el 64 % del tiempo.
+
+**Cómo calcula el ahorro (exacto según el supuesto).** Precio on-demand por hora × horas apagadas al mes. AWS usa meses de 730 horas: con `--horas-semana 60` son 730 × (168 − 60) / 168 ≈ 469 horas apagadas al mes. Solo cuenta el cómputo: los volúmenes EBS y el almacenamiento de RDS se siguen cobrando con el recurso apagado.
+
+**Casos especiales.**
+
+- EC2: el precio solo se calcula para Linux/UNIX con tenencia compartida. Windows, RHEL, SUSE, instancias spot o dedicadas aparecen sin precio.
+- EC2 dentro de un grupo de Auto Scaling: no se sugiere `stop-instances`, porque el grupo la reemplazaría. Hay que programar la capacidad del grupo.
+- RDS: el precio cubre MySQL, PostgreSQL, MariaDB, Aurora MySQL y Aurora PostgreSQL. Para Aurora se sugiere detener el clúster. Las réplicas de lectura no se pueden detener y aparecen sin comando.
+- AWS vuelve a encender automáticamente una base RDS o un clúster Aurora detenidos después de 7 días.
+- El script no mide el uso real del recurso: se basa en las etiquetas y en el horario que indiques.
+
 ## Cómo se calcula el ahorro
 
 **Tipo de ahorro.** Cada hallazgo indica uno de dos tipos:
@@ -175,6 +206,8 @@ Archivo: [`iam/politica-minima.json`](iam/politica-minima.json). Contiene exacta
 | `ec2:DescribeVolumes` | Scripts 1 y 2: listar volúmenes EBS. |
 | `ec2:DescribeSnapshots` | Script 2: listar snapshots propios. |
 | `ec2:DescribeImages` | Script 2: saber qué snapshots usa una AMI propia. |
+| `ec2:DescribeInstances` | Script 3: listar instancias EC2 y sus etiquetas. |
+| `rds:DescribeDBInstances` | Script 3: listar instancias RDS y sus etiquetas. |
 | `pricing:GetProducts` | Consultar precios en la AWS Pricing API. Es opcional: sin él se usa la tabla local. |
 
 Para aplicarla, usa el archivo tal cual; no copies la política desde este README.

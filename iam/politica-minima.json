@@ -6,10 +6,12 @@
       "Effect": "Allow",
       "Action": [
         "ec2:DescribeImages",
+        "ec2:DescribeInstances",
         "ec2:DescribeRegions",
         "ec2:DescribeSnapshots",
         "ec2:DescribeVolumes",
-        "pricing:GetProducts"
+        "pricing:GetProducts",
+        "rds:DescribeDBInstances"
       ],
       "Resource": "*"
     }

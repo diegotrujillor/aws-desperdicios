@@ -173,6 +173,12 @@ Para `scripts/02_volumenes_y_snapshots.py`:
 - Revisa las etiquetas del recurso (`Name`, `Owner`, `Project`) y pregunta al equipo dueño antes de borrar.
 - Un snapshot que usa una AMI no se puede borrar mientras la AMI exista.
 
+Para `scripts/03_entornos_dev_24x7.py`:
+
+- Detener una EC2 borra los datos de los discos *instance store* y cambia su IP pública si no tiene una IP elástica.
+- Antes de detener algo, confirma con el equipo que nadie lo usa fuera de horario (pipelines nocturnos, pruebas programadas, otras zonas horarias).
+- El comando sugerido apaga una vez. Para un horario permanente necesitas una automatización: por ejemplo, reglas de Amazon EventBridge Scheduler o AWS Instance Scheduler.
+
 ## 8. Errores comunes
 
 | Mensaje | Causa | Solución |
