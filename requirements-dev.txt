@@ -2,3 +2,4 @@
 moto[ec2,rds,logs,cloudwatch]>=5.0
 pytest>=8.0
 pytest-cov>=5.0
+ijson>=3.2  # only for tools/generar_precios.py
