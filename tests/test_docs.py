@@ -40,7 +40,11 @@ def test_readme_lists_every_policy_action(policy_actions):
         assert action in README, action
 
 
+KIT_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSd101aqEik32UXLvZ0tSl_t-Nk1ln0to7AU8RfdPfhwluvgPA/viewform"
+
+
 def test_readme_ends_with_a_single_kit_line():
     lines = [line for line in README.splitlines() if line.strip()]
-    assert README.count("[ENLACE_KIT]") == 1
-    assert "[ENLACE_KIT]" in lines[-1]
+    assert README.count(KIT_FORM_URL) == 1
+    assert KIT_FORM_URL in lines[-1]
+    assert "[ENLACE_KIT]" not in README
