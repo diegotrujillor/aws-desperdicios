@@ -37,6 +37,25 @@ class CheckDefinition:
     add_arguments: Callable[[argparse.ArgumentParser], None] = lambda parser: None
 
 
+def int_in_range(minimum: int, maximum: int | None = None) -> Callable[[str], int]:
+    """argparse type: integer within [minimum, maximum], with a Spanish error message."""
+
+    def parse(text: str) -> int:
+        try:
+            value = int(text)
+        except ValueError as error:
+            raise argparse.ArgumentTypeError(f"'{text}' no es un número entero") from error
+        if value < minimum or (maximum is not None and value > maximum):
+            upper = "" if maximum is None else f" y {maximum}"
+            raise argparse.ArgumentTypeError(f"debe estar entre {minimum}{upper}" if upper else f"debe ser mayor o igual a {minimum}")
+        return value
+
+    return parse
+
+
+non_negative_int = int_in_range(0)
+
+
 def build_parser(check: CheckDefinition) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=check.description)
     parser.add_argument("--profile", help="Perfil de AWS CLI a usar (por defecto, la cadena estándar).")

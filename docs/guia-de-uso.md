@@ -167,6 +167,12 @@ Para `scripts/01_gp2_a_gp3.py` en particular:
   El estado pasa por `modifying` y `optimizing` hasta `completed`.
 - Después de modificar un volumen debes esperar al menos 6 horas para volver a modificarlo.
 
+Para `scripts/02_volumenes_y_snapshots.py`:
+
+- Borrar un volumen o un snapshot no se puede deshacer. Si no sabes de quién es un volumen, crea antes un snapshot (`aws ec2 create-snapshot --volume-id ...`): guardarlo cuesta menos que el volumen.
+- Revisa las etiquetas del recurso (`Name`, `Owner`, `Project`) y pregunta al equipo dueño antes de borrar.
+- Un snapshot que usa una AMI no se puede borrar mientras la AMI exista.
+
 ## 8. Errores comunes
 
 | Mensaje | Causa | Solución |

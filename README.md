@@ -23,7 +23,7 @@ Si es tu primera vez, empieza por la [guía de uso](docs/guia-de-uso.md): explic
 | # | Desperdicio | Script | Tipo de ahorro | Estado |
 |---|---|---|---|---|
 | 1 | Volúmenes EBS gp2 que podrían ser gp3 | `scripts/01_gp2_a_gp3.py` | exacto | disponible |
-| 2 | Volúmenes EBS huérfanos y snapshots antiguos | — | máximo | en desarrollo |
+| 2 | Volúmenes EBS sin adjuntar y snapshots antiguos | `scripts/02_volumenes_y_snapshots.py` | exacto (volúmenes) y máximo (snapshots) | disponible |
 | 3 | Entornos de desarrollo y pruebas encendidos 24/7 | — | exacto (según horario supuesto) | en desarrollo |
 | 4 | Grupos de logs de CloudWatch con retención infinita | — | máximo | en desarrollo |
 | 5 | NAT Gateway procesando tráfico hacia S3/DynamoDB | — | máximo | en desarrollo |
@@ -121,6 +121,33 @@ Con `--json`, cada hallazgo tiene esta forma:
 
 El JSON completo también incluye `titulo`, `total_ahorro_mensual_usd`, `errores`, `notas` y `fuentes_de_precios`.
 
+### 2. Volúmenes EBS sin adjuntar y snapshots antiguos
+
+```bash
+python scripts/02_volumenes_y_snapshots.py --profile mi-perfil
+python scripts/02_volumenes_y_snapshots.py --profile mi-perfil --dias 180
+```
+
+Opción propia:
+
+| Opción | Qué hace | Valor por defecto |
+|---|---|---|
+| `--dias N` | Reporta solo snapshots creados hace más de N días. | 90 |
+
+**Qué detecta.**
+
+- Volúmenes EBS en estado `available`, es decir, sin adjuntar a ninguna instancia.
+- Snapshots EBS propios de la cuenta, en el nivel estándar, con más de `--dias` días.
+
+**Por qué es un desperdicio.** Un volumen sin adjuntar se cobra completo (almacenamiento, IOPS y throughput aprovisionados) aunque nadie lo use. Los snapshots antiguos se acumulan, sobre todo cuando ya se borró el volumen del que salieron.
+
+**Cómo calcula el ahorro.**
+
+- Volúmenes, **exacto**: costo mensual completo del volumen según su tipo. Incluye las IOPS y el throughput adicionales de gp3, las IOPS de io1 y las IOPS por tramos de io2.
+- Snapshots, **máximo**: tamaño del volumen de origen × precio del snapshot por GB-mes. Los snapshots son incrementales y las APIs de solo lectura no muestran cuántos bytes factura cada uno, así que el ahorro real es igual o menor.
+
+**Casos especiales.** Los snapshots que usa una AMI propia o que administra AWS Backup se listan sin comando y sin ahorro, con el motivo en el detalle: primero hay que desregistrar la AMI o ajustar el plan de respaldo. El detalle también avisa cuando el volumen de origen ya no existe.
+
 ## Cómo se calcula el ahorro
 
 **Tipo de ahorro.** Cada hallazgo indica uno de dos tipos:
@@ -145,26 +172,12 @@ Archivo: [`iam/politica-minima.json`](iam/politica-minima.json). Contiene exacta
 | Permiso | Para qué |
 |---|---|
 | `ec2:DescribeRegions` | Listar las regiones habilitadas (no se usa si pasas `--region`). |
-| `ec2:DescribeVolumes` | Script 1: listar volúmenes EBS. |
+| `ec2:DescribeVolumes` | Scripts 1 y 2: listar volúmenes EBS. |
+| `ec2:DescribeSnapshots` | Script 2: listar snapshots propios. |
+| `ec2:DescribeImages` | Script 2: saber qué snapshots usa una AMI propia. |
 | `pricing:GetProducts` | Consultar precios en la AWS Pricing API. Es opcional: sin él se usa la tabla local. |
 
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Sid": "AwsDesperdiciosReadOnly",
-      "Effect": "Allow",
-      "Action": [
-        "ec2:DescribeRegions",
-        "ec2:DescribeVolumes",
-        "pricing:GetProducts"
-      ],
-      "Resource": "*"
-    }
-  ]
-}
-```
+Para aplicarla, usa el archivo tal cual; no copies la política desde este README.
 
 Una prueba automática verifica que la política coincida exactamente con las llamadas que hacen los scripts y que todas sean de lectura. La [guía de uso](docs/guia-de-uso.md#2-crea-un-acceso-de-solo-lectura) explica cómo aplicarla.
 

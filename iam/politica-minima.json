@@ -5,7 +5,9 @@
       "Sid": "AwsDesperdiciosReadOnly",
       "Effect": "Allow",
       "Action": [
+        "ec2:DescribeImages",
         "ec2:DescribeRegions",
+        "ec2:DescribeSnapshots",
         "ec2:DescribeVolumes",
         "pricing:GetProducts"
       ],
