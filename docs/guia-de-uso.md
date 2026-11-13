@@ -1,238 +1,422 @@
-# Guía de uso
+# Guía paso a paso
 
-Esta guía te lleva desde cero hasta tu primer reporte, sin poner en riesgo tu cuenta. Toma unos 15 minutos.
+Esta guía es para cualquier persona, aunque nunca haya usado una terminal. Si sigues los pasos en orden, en unos 30 minutos tendrás un reporte de cuánto dinero se está perdiendo en tu cuenta de AWS.
 
-- [1. Antes de empezar](#1-antes-de-empezar)
-- [2. Crea un acceso de solo lectura](#2-crea-un-acceso-de-solo-lectura)
-- [3. Instala los scripts](#3-instala-los-scripts)
-- [4. Verifica el acceso](#4-verifica-el-acceso)
-- [5. Ejecuta tu primer reporte](#5-ejecuta-tu-primer-reporte)
-- [6. Lee el resultado](#6-lee-el-resultado)
-- [7. Antes de aplicar un comando sugerido](#7-antes-de-aplicar-un-comando-sugerido)
-- [8. Errores comunes](#8-errores-comunes)
-- [9. Preguntas frecuentes](#9-preguntas-frecuentes)
+> **Tranquilo: esto no cambia nada en tu cuenta.** Los scripts solo *miran*. No apagan, no borran y no modifican ningún recurso. Además, el permiso que vas a crear en el paso 6 solo deja leer: aunque quisieran, no podrían cambiar nada.
 
-## 1. Antes de empezar
+## Índice
+
+- [Antes de empezar](#antes-de-empezar)
+- [Paso 1: Abre la terminal](#paso-1-abre-la-terminal)
+- [Paso 2: Revisa que tienes Python](#paso-2-revisa-que-tienes-python)
+- [Paso 3: Instala AWS CLI](#paso-3-instala-aws-cli)
+- [Paso 4: Descarga los scripts](#paso-4-descarga-los-scripts)
+- [Paso 5: Prepara los scripts](#paso-5-prepara-los-scripts)
+- [Paso 6: Crea un acceso de solo lectura](#paso-6-crea-un-acceso-de-solo-lectura)
+- [Paso 7: Comprueba que el acceso funciona](#paso-7-comprueba-que-el-acceso-funciona)
+- [Paso 8: Ejecuta tu primer reporte](#paso-8-ejecuta-tu-primer-reporte)
+- [Paso 9: Ejecuta los cinco reportes](#paso-9-ejecuta-los-cinco-reportes)
+- [Paso 10: Entiende el reporte](#paso-10-entiende-el-reporte)
+- [Paso 11: Decide qué hacer](#paso-11-decide-qué-hacer)
+- [Paso 12: Limpia al terminar](#paso-12-limpia-al-terminar)
+- [Si algo sale mal](#si-algo-sale-mal)
+- [Preguntas frecuentes](#preguntas-frecuentes)
+- [Palabras que vas a ver](#palabras-que-vas-a-ver)
+
+## Antes de empezar
 
 Necesitas:
 
-- Python 3.11 o superior (`python3 --version`).
-- Acceso a la cuenta AWS que quieres revisar, con permisos para crear una política y un rol en IAM. Solo se necesitan una vez, para el paso 2.
-- AWS CLI (opcional, pero recomendado): sirve para verificar el acceso y para ejecutar los comandos sugeridos si decides aplicarlos.
+- [ ] Un computador con Mac, Windows o Linux.
+- [ ] Poder entrar a la consola web de AWS (https://console.aws.amazon.com) de la cuenta que quieres revisar, con permiso para crear usuarios y políticas en IAM. Si no lo tienes, pídele a quien administra la cuenta que haga contigo el [paso 6](#paso-6-crea-un-acceso-de-solo-lectura).
+- [ ] Unos 30 minutos.
 
-Qué hacen y qué no hacen los scripts:
+Cómo leer esta guía:
 
-- Leen la configuración de tus recursos con llamadas `Describe*`, `Get*` y `List*`.
-- No crean, modifican ni borran nada. Los comandos que sugieren solo se imprimen en pantalla.
-- No envían datos a ningún sitio distinto de AWS. Todo se ejecuta en tu máquina.
+- Lo que está en un recuadro gris como este es un **comando**: lo copias, lo pegas en la terminal y presionas Enter.
 
-## 2. Crea un acceso de solo lectura
+  ```bash
+  python3 --version
+  ```
 
-Usa un acceso que tenga **solo** la política de este repositorio, aunque tengas otro perfil con más permisos. Así, aunque algo saliera mal, el script no podría cambiar nada. Evita usar el usuario root y las llaves de acceso de larga duración.
+- Después de cada comando te digo **qué deberías ver**. Si ves algo distinto, ve a [Si algo sale mal](#si-algo-sale-mal).
 
-Elige una opción.
+## Paso 1: Abre la terminal
 
-### Opción A: AWS IAM Identity Center (si tu organización ya lo usa)
+La terminal es una ventana donde escribes instrucciones para el computador.
 
-1. En la consola de IAM Identity Center, crea un *permission set* llamado `aws-desperdicios-solo-lectura`.
-2. Agrégale una política en línea (*inline policy*) con el contenido de `iam/politica-minima.json`.
-3. Asígnalo a tu usuario en la cuenta que quieres revisar.
-4. En tu máquina, configura el perfil:
+- **Mac:** presiona `Cmd + Espacio`, escribe `Terminal` y presiona Enter.
+- **Windows:** presiona la tecla Windows, escribe `PowerShell` y presiona Enter.
+- **Linux:** presiona `Ctrl + Alt + T`.
 
-   ```bash
-   aws configure sso --profile desperdicios
-   ```
+Deja esa ventana abierta durante toda la guía.
 
-### Opción B: un rol IAM que asumes desde tu perfil actual
+## Paso 2: Revisa que tienes Python
 
-1. Desde la carpeta del repositorio, crea la política (cambia `123456789012` por el ID de tu cuenta en todos los comandos):
+Python es el lenguaje en que están escritos los scripts.
 
-   ```bash
-   aws iam create-policy \
-     --policy-name aws-desperdicios-solo-lectura \
-     --policy-document file://iam/politica-minima.json
-   ```
+Mac o Linux:
 
-2. Crea un archivo `confianza.json`. Permite que las identidades de tu cuenta con permiso `sts:AssumeRole` asuman el rol:
+```bash
+python3 --version
+```
 
-   ```json
-   {
-     "Version": "2012-10-17",
-     "Statement": [
-       {
-         "Effect": "Allow",
-         "Principal": { "AWS": "arn:aws:iam::123456789012:root" },
-         "Action": "sts:AssumeRole"
-       }
-     ]
-   }
-   ```
+Windows:
 
-3. Crea el rol y adjúntale la política:
+```powershell
+py --version
+```
+
+**Deberías ver** algo como `Python 3.12.4`. El número del medio tiene que ser **11 o mayor** (3.11, 3.12, 3.13...).
+
+**Si dice "command not found" o el número es menor:** descarga Python desde https://www.python.org/downloads/, instálalo y vuelve a intentarlo. En Windows, durante la instalación marca la casilla **"Add python.exe to PATH"**. Cierra y vuelve a abrir la terminal después de instalar.
+
+## Paso 3: Instala AWS CLI
+
+AWS CLI es la herramienta oficial de AWS para la terminal. La vas a usar para guardar tu acceso de forma segura.
+
+1. Sigue las instrucciones para tu sistema en la página oficial: https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
+2. Cierra y vuelve a abrir la terminal.
+3. Comprueba que quedó instalada:
 
    ```bash
-   aws iam create-role \
-     --role-name aws-desperdicios-solo-lectura \
-     --assume-role-policy-document file://confianza.json
-
-   aws iam attach-role-policy \
-     --role-name aws-desperdicios-solo-lectura \
-     --policy-arn arn:aws:iam::123456789012:policy/aws-desperdicios-solo-lectura
+   aws --version
    ```
 
-4. Agrega el perfil a `~/.aws/config`, donde `source_profile` es el perfil que ya usas:
+**Deberías ver** algo como `aws-cli/2.x.x Python/3.x ...`.
 
-   ```ini
-   [profile desperdicios]
-   role_arn = arn:aws:iam::123456789012:role/aws-desperdicios-solo-lectura
-   source_profile = default
+## Paso 4: Descarga los scripts
+
+**Opción fácil, sin comandos:**
+
+1. Abre https://github.com/diegotrujillor/aws-desperdicios
+2. Haz clic en el botón verde **Code** y luego en **Download ZIP**.
+3. Descomprime el archivo. Te queda una carpeta llamada `aws-desperdicios-main`.
+4. En la terminal, entra a esa carpeta. Si quedó en Descargas:
+
+   Mac o Linux:
+
+   ```bash
+   cd ~/Downloads/aws-desperdicios-main
    ```
 
-Estos comandos de IAM los ejecutas tú, una sola vez. Los scripts de este repositorio nunca escriben en IAM.
+   Windows:
 
-## 3. Instala los scripts
+   ```powershell
+   cd $HOME\Downloads\aws-desperdicios-main
+   ```
+
+**Opción con git** (si ya lo usas):
 
 ```bash
 git clone https://github.com/diegotrujillor/aws-desperdicios.git
 cd aws-desperdicios
+```
+
+**Para comprobar que estás en la carpeta correcta**, escribe `ls` (Mac/Linux) o `dir` (Windows). **Deberías ver** `README.md`, `scripts`, `iam` y otras carpetas.
+
+## Paso 5: Prepara los scripts
+
+Esto crea un espacio aislado para los scripts e instala lo único que necesitan (la librería `boto3` de AWS). Se hace una sola vez.
+
+Mac o Linux:
+
+```bash
 python3 -m venv .venv
-source .venv/bin/activate        # En Windows: .venv\Scripts\activate
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## 4. Verifica el acceso
+Windows:
+
+```powershell
+py -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+**Deberías ver** que al inicio de la línea de la terminal aparece `(.venv)`, y al final del último comando un mensaje como `Successfully installed boto3...`.
+
+> **Importante:** cada vez que abras una terminal nueva para usar los scripts, entra a la carpeta y vuelve a ejecutar solo la segunda línea (`source .venv/bin/activate` o `.venv\Scripts\activate`).
+
+## Paso 6: Crea un acceso de solo lectura
+
+Vas a crear un "usuario" en AWS que **solo puede mirar**. Así los scripts no tienen forma de cambiar nada.
+
+> Si tu empresa entra a AWS con un portal de inicio de sesión único (AWS IAM Identity Center o "SSO"), sáltate este paso y lee [Mi empresa usa SSO](#mi-empresa-usa-sso-iam-identity-center).
+
+### 6.1 Crea la política (la lista de permisos)
+
+1. Entra a https://console.aws.amazon.com y busca **IAM** en la barra de búsqueda de arriba.
+2. En el menú de la izquierda, haz clic en **Políticas** (*Policies*).
+3. Haz clic en **Crear política** (*Create policy*).
+4. Haz clic en la pestaña **JSON**.
+5. Borra todo el texto que aparece.
+6. Abre el archivo `iam/politica-minima.json` de la carpeta que descargaste (con el Bloc de notas o TextEdit), copia **todo** su contenido y pégalo en el editor.
+7. Haz clic en **Siguiente** (*Next*).
+8. En **Nombre de la política** (*Policy name*) escribe `aws-desperdicios-solo-lectura`.
+9. Haz clic en **Crear política** (*Create policy*).
+
+### 6.2 Crea el usuario
+
+1. En el menú de la izquierda de IAM, haz clic en **Usuarios** (*Users*) y luego en **Crear usuario** (*Create user*).
+2. En **Nombre de usuario** escribe `aws-desperdicios`. **No** marques la opción de acceso a la consola. Haz clic en **Siguiente**.
+3. Elige **Adjuntar políticas directamente** (*Attach policies directly*).
+4. En el buscador escribe `aws-desperdicios-solo-lectura` y marca la casilla de esa política.
+5. Haz clic en **Siguiente** y luego en **Crear usuario**.
+
+### 6.3 Crea la clave de acceso
+
+1. En la lista de usuarios, haz clic en `aws-desperdicios`.
+2. Abre la pestaña **Credenciales de seguridad** (*Security credentials*).
+3. Baja hasta **Claves de acceso** (*Access keys*) y haz clic en **Crear clave de acceso** (*Create access key*).
+4. Elige **Interfaz de línea de comandos (CLI)**, marca la casilla de confirmación y haz clic en **Siguiente** y luego en **Crear clave de acceso**.
+5. Vas a ver dos valores: **ID de clave de acceso** y **Clave de acceso secreta**. **No cierres esa pantalla todavía.**
+
+> La clave secreta solo se muestra una vez. No la mandes por correo ni chat y no la guardes en un documento. En el [paso 12](#paso-12-limpia-al-terminar) la vas a borrar.
+
+### 6.4 Guarda la clave en tu computador
+
+En la terminal escribe:
+
+```bash
+aws configure --profile desperdicios
+```
+
+Te va a hacer cuatro preguntas. Responde así y presiona Enter después de cada una:
+
+| Pregunta | Qué escribir |
+|---|---|
+| `AWS Access Key ID` | El **ID de clave de acceso** de la pantalla anterior. |
+| `AWS Secret Access Key` | La **clave de acceso secreta**. |
+| `Default region name` | `us-east-1` (o la región donde tienes más recursos). |
+| `Default output format` | `json` |
+
+Listo: ya puedes cerrar la pantalla de la clave en AWS. `desperdicios` es el nombre de tu perfil; lo vas a usar en los comandos.
+
+## Paso 7: Comprueba que el acceso funciona
 
 ```bash
 aws sts get-caller-identity --profile desperdicios
 ```
 
-Debe mostrar el ID de la cuenta correcta y el ARN del rol `aws-desperdicios-solo-lectura`. Si muestra otra cuenta, detente y revisa el perfil antes de seguir.
+**Deberías ver** algo así:
 
-## 5. Ejecuta tu primer reporte
+```json
+{
+    "UserId": "AIDA...",
+    "Account": "123456789012",
+    "Arn": "arn:aws:iam::123456789012:user/aws-desperdicios"
+}
+```
 
-Empieza por una sola región para ver el formato:
+Revisa que `Account` sea el número de la cuenta que quieres revisar y que `Arn` termine en `user/aws-desperdicios`. Si no coincide, detente y revisa el paso 6.
+
+## Paso 8: Ejecuta tu primer reporte
+
+Empieza con una sola región para que sea rápido.
+
+Mac o Linux:
 
 ```bash
 python scripts/01_gp2_a_gp3.py --profile desperdicios --region us-east-1
 ```
 
-Luego revisa todas las regiones habilitadas en la cuenta (tarda más):
+Windows:
 
-```bash
-python scripts/01_gp2_a_gp3.py --profile desperdicios
+```powershell
+python scripts\01_gp2_a_gp3.py --profile desperdicios --region us-east-1
 ```
 
-Para guardar el resultado y procesarlo después:
+**Deberías ver** un título, una tabla (o el mensaje *No se encontraron recursos...*) y unas notas al final. Tarda unos segundos.
 
-```bash
-python scripts/01_gp2_a_gp3.py --profile desperdicios --json > gp2-a-gp3.json
-```
+Si no pones `--region`, el script revisa **todas** las regiones activas de tu cuenta. Es lo recomendable, pero tarda más (uno o dos minutos).
 
-Para correr los cinco scripts y guardar cada resultado:
+## Paso 9: Ejecuta los cinco reportes
+
+Cada script busca un desperdicio distinto:
+
+| Script | Qué busca, en palabras simples |
+|---|---|
+| `scripts/01_gp2_a_gp3.py` | Discos de un tipo viejo (gp2) que cuestan más que el tipo nuevo (gp3) y rinden igual o menos. |
+| `scripts/02_volumenes_y_snapshots.py` | Discos que no están conectados a ningún servidor y copias de respaldo (snapshots) viejas. |
+| `scripts/03_entornos_dev_24x7.py` | Servidores y bases de datos de desarrollo o pruebas que están prendidos de noche y los fines de semana. |
+| `scripts/04_logs_sin_retencion.py` | Registros (logs) que se guardan para siempre porque nadie les puso fecha de vencimiento. |
+| `scripts/05_nat_sin_endpoints.py` | Tráfico hacia S3 o DynamoDB que pasa por un NAT Gateway (se cobra por GB) en vez de una ruta gratuita. |
+
+Ejecuta cada uno igual que en el paso 8, cambiando el nombre del script. Para guardar los cinco resultados en archivos, en Mac o Linux:
 
 ```bash
 for script in scripts/0*.py; do
-  python "$script" --profile desperdicios --json > "$(basename "$script" .py).json"
+  python "$script" --profile desperdicios > "$(basename "$script" .py).txt"
 done
 ```
 
-`--help` muestra todas las opciones de cada script.
+Quedan cinco archivos `.txt` en la carpeta, uno por desperdicio, que puedes abrir con cualquier editor de texto.
 
-## 6. Lee el resultado
-
-El reporte tiene estas partes:
-
-| Parte | Qué significa |
-|---|---|
-| Tabla | Un recurso por fila: región, ID, detalle, ahorro mensual estimado en USD y tipo de ahorro. |
-| Ahorro `sin precio` | No se encontró el precio para esa región. El recurso se reporta, pero no suma al total. |
-| Tipo `exacto` | El ahorro se calculó con datos completos y precios públicos. |
-| Tipo `máximo` | Es un tope. El ahorro real puede ser menor; la sección *Notas* explica por qué. |
-| Total estimado | La suma de los ahorros con precio. Son precios on-demand de lista, sin descuentos ni impuestos. |
-| Comandos sugeridos | Lo que podrías ejecutar para corregir cada hallazgo. **No se ejecutaron.** |
-| Errores | Regiones que no se pudieron revisar y por qué; por ejemplo, un permiso faltante. |
-| Notas | Supuestos del cálculo y advertencias específicas del desperdicio. |
-| Fuentes de precios | De dónde salió cada precio: la AWS Pricing API o la tabla local, con su fecha. |
-
-## 7. Antes de aplicar un comando sugerido
-
-Los comandos sugeridos sí modifican recursos, así que necesitan un perfil con más permisos que el de solo lectura. Antes de ejecutar cualquiera:
-
-1. Confirma la cuenta, la región y el ID del recurso.
-2. Lee las notas del reporte para ese desperdicio.
-3. Si el recurso es de producción, hazlo en una ventana de cambios y con un snapshot reciente como respaldo.
-4. Aplica el cambio a un solo recurso, verifica el resultado y luego sigue con los demás.
-
-Para `scripts/01_gp2_a_gp3.py` en particular:
-
-- `modify-volume` cambia el volumen en caliente; la instancia sigue funcionando.
-- Puedes seguir el avance con:
-
-  ```bash
-  aws ec2 describe-volumes-modifications --volume-ids vol-xxxxxxxx --region us-east-1
-  ```
-
-  El estado pasa por `modifying` y `optimizing` hasta `completed`.
-- Después de modificar un volumen debes esperar al menos 6 horas para volver a modificarlo.
-
-Para `scripts/02_volumenes_y_snapshots.py`:
-
-- Borrar un volumen o un snapshot no se puede deshacer. Si no sabes de quién es un volumen, crea antes un snapshot (`aws ec2 create-snapshot --volume-id ...`): guardarlo cuesta menos que el volumen.
-- Revisa las etiquetas del recurso (`Name`, `Owner`, `Project`) y pregunta al equipo dueño antes de borrar.
-- Un snapshot que usa una AMI no se puede borrar mientras la AMI exista.
-
-Para `scripts/03_entornos_dev_24x7.py`:
-
-- Detener una EC2 borra los datos de los discos *instance store* y cambia su IP pública si no tiene una IP elástica.
-- Antes de detener algo, confirma con el equipo que nadie lo usa fuera de horario (pipelines nocturnos, pruebas programadas, otras zonas horarias).
-- El comando sugerido apaga una vez. Para un horario permanente necesitas una automatización: por ejemplo, reglas de Amazon EventBridge Scheduler o AWS Instance Scheduler.
-
-Para `scripts/04_logs_sin_retencion.py`:
-
-- La retención borra de forma permanente los eventos más antiguos que el plazo elegido.
-- Antes de aplicarla, revisa si alguna norma (auditoría, contratos, regulación) exige conservar esos logs. Si es así, expórtalos a S3 y usa una clase de almacenamiento de bajo costo.
-- Elige la retención con `--retencion-dias` para que el comando sugerido ya la incluya.
-
-Para `scripts/05_nat_sin_endpoints.py`:
-
-- Crear un endpoint gateway agrega rutas a las tablas indicadas. No interrumpe conexiones, pero cambia el camino del tráfico hacia S3 o DynamoDB.
-- Revisa antes las políticas de bucket que filtran por IP pública (`aws:SourceIp`) o por VPC (`aws:SourceVpc`, `aws:SourceVpce`).
-- Después de aplicarlo, compara las métricas del NAT durante unos días para medir el ahorro real.
-
-## 8. Errores comunes
-
-| Mensaje | Causa | Solución |
-|---|---|---|
-| `Falta el permiso IAM 'ec2:DescribeVolumes'.` | El perfil no tiene ese permiso. | Revisa que la política adjunta sea la versión actual de `iam/politica-minima.json`. |
-| `No existe el perfil 'X' en tu configuración de AWS CLI` | El nombre de `--profile` no está en `~/.aws/config`. | Revisa el nombre con `aws configure list-profiles`. |
-| `No se encontraron credenciales de AWS.` | No hay credenciales activas. | Usa `--profile`, o inicia sesión con `aws sso login --profile desperdicios`. |
-| `No se usó la AWS Pricing API: falta el permiso IAM 'pricing:GetProducts'.` | La política no incluye ese permiso. | Es opcional: el script usa la tabla local. Agrégalo si quieres precios de todas las regiones. |
-| `Sin precio para la región X` | La Pricing API no estaba disponible y la tabla local no tiene esa región. | Da el permiso `pricing:GetProducts`. |
-| `No fue posible conectarse a AWS` | Problema de red o de proxy. | Revisa tu conexión y las variables `HTTPS_PROXY`. |
-| Código de salida `1` | Alguna región falló; las demás sí se revisaron. | Lee la sección *Errores* del reporte. |
-
-## 9. Preguntas frecuentes
-
-**¿Ejecutar los scripts modifica algo en mi cuenta?**
-No. Solo leen. La política mínima tampoco permitiría escribir.
-
-**¿Por qué el ahorro no coincide con mi factura?**
-Los scripts usan precios on-demand de lista. Si tienes Savings Plans, Reserved Instances, descuentos por volumen o créditos, tu ahorro real puede ser menor.
-
-**¿Cuesta algo ejecutarlos?**
-Los scripts 1 a 4 solo usan llamadas `Describe*` y `pricing:GetProducts`. El script 5 además lee métricas con `GetMetricStatistics` (2 consultas por NAT Gateway), y CloudWatch cobra esas solicitudes: USD 0.01 por cada 1.000 en us-east-1, según el AWS Price List.
-
-**¿Revisa regiones que no tengo habilitadas?**
-No. Sin `--region`, revisa solo las regiones habilitadas en la cuenta.
-
-**Tengo varias cuentas en AWS Organizations. ¿Cómo las reviso?**
-Cada ejecución revisa una cuenta. Crea un perfil por cuenta y ejecútalo en un ciclo:
+Cada script tiene opciones extra (por ejemplo, cuántos días de antigüedad o qué horario de trabajo suponer). Para verlas, agrega `--help`:
 
 ```bash
-for perfil in cuenta-dev cuenta-prod; do
-  python scripts/01_gp2_a_gp3.py --profile "$perfil" --json > "gp2-$perfil.json"
-done
+python scripts/03_entornos_dev_24x7.py --help
 ```
 
-**¿Puedo verificar los precios de la tabla local?**
-Sí. `config/precios.toml` indica, para cada precio, la URL del archivo público del AWS Price List, su fecha de publicación y el `usagetype` que debes buscar en ese archivo.
+## Paso 10: Entiende el reporte
+
+Este es un ejemplo con datos de prueba:
+
+```text
+Desperdicio 1: volúmenes EBS gp2 que podrían ser gp3
+====================================================
+
+Región     Recurso                Detalle                                                  Ahorro USD/mes  Tipo
+---------  ---------------------  -------------------------------------------------------  --------------  ------
+us-east-1  vol-6a3167a266a789ee3  100 GiB gp2, sin adjuntar -> gp3 3000 IOPS / 128 MiB/s   1.88            exacto
+
+Total estimado: 1.88 USD/mes
+
+Comandos sugeridos (no se ejecutaron; revísalos antes de usarlos):
+  aws ec2 modify-volume --region us-east-1 --volume-id vol-6a3167a266a789ee3 --volume-type gp3 --iops 3000 --throughput 128
+
+Notas:
+  - ...
+
+Fuentes de precios:
+  - Tabla local config/precios.toml (AWS Price List publicado 2026-11-10)
+```
+
+Qué significa cada parte:
+
+- **Región:** el lugar del mundo donde está el recurso (`us-east-1` es Virginia, `sa-east-1` es São Paulo).
+- **Recurso:** el identificador del recurso en AWS. Puedes pegarlo en el buscador de la consola para encontrarlo.
+- **Detalle:** qué es y por qué aparece.
+- **Ahorro USD/mes:** cuánto dejarías de pagar cada mes si lo corriges. Si dice `sin precio`, el script encontró el recurso pero no el precio, y no lo suma al total.
+- **Tipo:**
+  - `exacto`: la cifra sale de datos completos de tu cuenta.
+  - `máximo`: es un tope. El ahorro real puede ser menor. Las notas explican por qué.
+- **Total estimado:** la suma de la columna de ahorro. Usa precios de lista de AWS: si tu empresa tiene descuentos, el ahorro real puede ser menor.
+- **Comandos sugeridos:** cómo se corregiría cada hallazgo. **El script no los ejecutó.**
+- **Notas:** supuestos y advertencias. Léelas siempre.
+- **Fuentes de precios:** de dónde salieron los precios, para que puedas verificarlos.
+
+## Paso 11: Decide qué hacer
+
+El reporte es una lista de oportunidades, no una orden. Antes de cambiar algo:
+
+1. **Pregunta de quién es.** Busca el recurso en la consola de AWS y mira sus etiquetas (*Tags*), como `Name`, `Owner` o `Project`. Confirma con el equipo dueño.
+2. **Empieza por lo más grande.** Ordena por la columna de ahorro y revisa primero lo que más cuesta.
+3. **Cambia un recurso a la vez** y comprueba que todo sigue funcionando antes de seguir.
+4. **Los comandos sugeridos necesitan otro acceso.** El usuario `aws-desperdicios` solo puede leer, así que esos comandos fallarán con él. Los debe ejecutar alguien con permisos de administración.
+
+Cuidados por script:
+
+- `scripts/01_gp2_a_gp3.py`: el cambio de disco se hace sin apagar el servidor. Después de cambiar un disco hay que esperar 6 horas para volver a modificarlo. Puedes ver el avance con `aws ec2 describe-volumes-modifications --volume-ids vol-xxxx --region us-east-1`.
+- `scripts/02_volumenes_y_snapshots.py`: **borrar no tiene vuelta atrás.** Si no estás seguro de un disco, crea antes una copia (snapshot), que cuesta menos que el disco. Un snapshot que usa una imagen (AMI) no se puede borrar mientras la imagen exista.
+- `scripts/03_entornos_dev_24x7.py`: apagar un servidor cambia su IP pública (salvo que tenga una IP elástica) y borra los discos temporales (*instance store*). Confirma que nadie lo usa de noche: pipelines, pruebas programadas, compañeros en otro huso horario. El comando sugerido apaga una sola vez; para un horario fijo se necesita una automatización, como Amazon EventBridge Scheduler.
+- `scripts/04_logs_sin_retencion.py`: poner retención **borra para siempre** los registros más viejos que el plazo. Si alguna norma obliga a guardarlos (auditoría, contratos), expórtalos antes a S3.
+- `scripts/05_nat_sin_endpoints.py`: crear la ruta gratuita (endpoint) cambia el camino del tráfico hacia S3 o DynamoDB. Revisa antes si alguna política de bucket filtra por IP (`aws:SourceIp`) o por VPC.
+
+## Paso 12: Limpia al terminar
+
+Cuando ya no vayas a usar los scripts, borra la clave de acceso:
+
+1. En la consola de AWS ve a **IAM → Usuarios → aws-desperdicios → Credenciales de seguridad**.
+2. En **Claves de acceso**, abre el menú de **Acciones** de la clave, elige **Desactivar** y luego **Eliminar**.
+3. Si no lo vas a volver a usar, borra también el usuario `aws-desperdicios`.
+
+En tu computador, borra el perfil del archivo de credenciales: abre `~/.aws/credentials` (Mac/Linux) o `%USERPROFILE%\.aws\credentials` (Windows) con un editor y elimina el bloque `[desperdicios]`.
+
+## Si algo sale mal
+
+| Ves esto | Qué pasa | Qué hacer |
+|---|---|---|
+| `command not found: python3` o `py no se reconoce` | Python no está instalado o la terminal no lo encuentra. | Vuelve al [paso 2](#paso-2-revisa-que-tienes-python). Cierra y abre la terminal después de instalar. |
+| `No module named 'boto3'` | No activaste el espacio aislado. | Ejecuta `source .venv/bin/activate` (Mac/Linux) o `.venv\Scripts\activate` (Windows). |
+| `can't open file ... scripts/01_gp2_a_gp3.py` | La terminal no está en la carpeta de los scripts. | Vuelve al final del [paso 4](#paso-4-descarga-los-scripts). |
+| `No existe el perfil 'desperdicios'` | No se guardó el perfil. | Repite el [paso 6.4](#64-guarda-la-clave-en-tu-computador). |
+| `No se encontraron credenciales de AWS.` | Olvidaste `--profile desperdicios`. | Agrégalo al final del comando. |
+| `Falta el permiso IAM '...'` | A la política le falta ese permiso, o es una versión vieja. | Repite el [paso 6.1](#61-crea-la-política-la-lista-de-permisos) con el `iam/politica-minima.json` actual (edita la política existente y pega el contenido nuevo). |
+| `No se usó la AWS Pricing API...` | La política no tiene el permiso de precios. | No es grave: el script usa una tabla de precios incluida. |
+| `Sin precio de ... en la región ...` | No hay precio disponible para esa región. | El recurso aparece igual, pero sin cifra de ahorro. |
+| `InvalidClientTokenId` o `SignatureDoesNotMatch` | La clave se copió mal o fue borrada. | Crea una clave nueva ([paso 6.3](#63-crea-la-clave-de-acceso)) y repite el [paso 6.4](#64-guarda-la-clave-en-tu-computador). |
+| `No fue posible conectarse a AWS` | Problema de internet o de proxy. | Revisa tu conexión. Si estás en una red corporativa, pregunta por el proxy. |
+
+## Preguntas frecuentes
+
+**¿Puede dañar algo?**
+No. Los scripts solo leen, y el usuario que creaste solo tiene permisos de lectura.
+
+**¿Cuesta algo ejecutarlos?**
+Los scripts 1 a 4 solo hacen consultas de lectura. El script 5 lee métricas de CloudWatch (2 consultas por NAT Gateway), y AWS cobra esas consultas: USD 0.01 por cada 1.000 en us-east-1, según el AWS Price List.
+
+**¿Mis datos salen de mi computador?**
+No. El script solo se conecta a AWS con tu clave. No envía nada a ningún otro lugar.
+
+**¿Por qué el ahorro no coincide con mi factura?**
+Los scripts usan precios de lista. Si tu empresa tiene Savings Plans, Reserved Instances, descuentos o créditos, el ahorro real puede ser menor.
+
+**¿Revisa todas mis regiones?**
+Sí, todas las que están activas en la cuenta, salvo que uses `--region`.
+
+**Tengo varias cuentas de AWS. ¿Cómo las reviso?**
+Haz el paso 6 en cada cuenta con un nombre de perfil distinto (por ejemplo `desperdicios-dev` y `desperdicios-prod`) y cambia `--profile` en los comandos.
+
+**¿Puedo verificar los precios?**
+Sí. El archivo `config/precios.toml` indica, para cada precio, de qué archivo público de AWS salió y cómo buscarlo.
+
+### Mi empresa usa SSO (IAM Identity Center)
+
+Pídele a quien administra AWS que:
+
+1. Cree un *permission set* llamado `aws-desperdicios-solo-lectura` con una política en línea (*inline policy*) igual al contenido de `iam/politica-minima.json`.
+2. Te lo asigne en la cuenta que quieres revisar.
+
+Luego, en la terminal:
+
+```bash
+aws configure sso --profile desperdicios
+```
+
+Responde con la URL de inicio de sesión de tu empresa y la región que te indiquen. Elige la cuenta y el rol `aws-desperdicios-solo-lectura`. Después sigue desde el [paso 7](#paso-7-comprueba-que-el-acceso-funciona). Cuando la sesión venza, entra de nuevo con `aws sso login --profile desperdicios`.
+
+<details>
+<summary>Opción avanzada: un rol IAM en vez de un usuario</summary>
+
+Si ya tienes un perfil de AWS CLI con permisos de administración, puedes evitar las claves de larga duración y crear un rol que asumes desde ese perfil (cambia `123456789012` por el ID de tu cuenta):
+
+```bash
+aws iam create-policy --policy-name aws-desperdicios-solo-lectura \
+  --policy-document file://iam/politica-minima.json
+
+aws iam create-role --role-name aws-desperdicios-solo-lectura \
+  --assume-role-policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":"arn:aws:iam::123456789012:root"},"Action":"sts:AssumeRole"}]}'
+
+aws iam attach-role-policy --role-name aws-desperdicios-solo-lectura \
+  --policy-arn arn:aws:iam::123456789012:policy/aws-desperdicios-solo-lectura
+```
+
+Y agrega a `~/.aws/config`:
+
+```ini
+[profile desperdicios]
+role_arn = arn:aws:iam::123456789012:role/aws-desperdicios-solo-lectura
+source_profile = default
+```
+
+</details>
+
+## Palabras que vas a ver
+
+| Palabra | Qué es |
+|---|---|
+| **AWS CLI** | Programa oficial de AWS para usar AWS desde la terminal. |
+| **IAM** | La parte de AWS donde se crean usuarios y se deciden sus permisos. |
+| **Política** | Lista de permisos: qué puede hacer un usuario. |
+| **Perfil** | Un nombre (aquí, `desperdicios`) con el que tu computador recuerda qué clave usar. |
+| **Región** | Centro de datos de AWS en una zona del mundo (`us-east-1`, `sa-east-1`...). |
+| **EBS / volumen** | Disco de un servidor en AWS. |
+| **Snapshot** | Copia de respaldo de un disco. |
+| **EC2** | Servidor virtual en AWS. |
+| **RDS** | Base de datos administrada por AWS. |
+| **CloudWatch Logs** | Donde AWS guarda los registros (logs) de aplicaciones y servicios. |
+| **NAT Gateway** | Puerta de salida a internet para servidores privados. Cobra por hora y por cada GB que pasa. |
+| **Endpoint gateway** | Ruta privada y gratuita hacia S3 o DynamoDB, sin pasar por el NAT. |

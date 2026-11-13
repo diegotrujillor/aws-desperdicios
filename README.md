@@ -4,7 +4,7 @@ Scripts en Python para detectar desperdicios comunes en cuentas AWS y estimar cu
 
 > **Solo lectura.** Ningún script crea, modifica ni borra recursos. Solo hacen llamadas `Describe*`, `Get*` y `List*`. Cuando un hallazgo tiene arreglo, el script **imprime** el comando de AWS CLI correspondiente para que tú lo revises y decidas si lo ejecutas. Nunca lo ejecuta.
 
-Si es tu primera vez, empieza por la [guía de uso](docs/guia-de-uso.md): explica paso a paso cómo crear un acceso de solo lectura, ejecutar los scripts e interpretar el resultado.
+Si es tu primera vez o no usas la terminal a diario, sigue la [guía paso a paso](docs/guia-de-uso.md): explica todo desde cero, sin suponer conocimientos previos.
 
 ## Contenido
 
@@ -267,7 +267,7 @@ Archivo: [`iam/politica-minima.json`](iam/politica-minima.json). Contiene exacta
 
 Para aplicarla, usa el archivo tal cual; no copies la política desde este README.
 
-Una prueba automática verifica que la política coincida exactamente con las llamadas que hacen los scripts y que todas sean de lectura. La [guía de uso](docs/guia-de-uso.md#2-crea-un-acceso-de-solo-lectura) explica cómo aplicarla.
+Una prueba automática verifica que la política coincida exactamente con las llamadas que hacen los scripts y que todas sean de lectura. La [guía de uso](docs/guia-de-uso.md#paso-6-crea-un-acceso-de-solo-lectura) explica cómo aplicarla.
 
 Si un permiso falta, el script lo dice con su nombre exacto, por ejemplo: `Falta el permiso IAM 'ec2:DescribeVolumes'.`
 
