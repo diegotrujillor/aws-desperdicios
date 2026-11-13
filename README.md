@@ -26,7 +26,7 @@ Si es tu primera vez, empieza por la [guía de uso](docs/guia-de-uso.md): explic
 | 2 | Volúmenes EBS sin adjuntar y snapshots antiguos | `scripts/02_volumenes_y_snapshots.py` | exacto (volúmenes) y máximo (snapshots) | disponible |
 | 3 | Entornos de desarrollo y pruebas encendidos 24/7 | `scripts/03_entornos_dev_24x7.py` | exacto (según el horario supuesto) | disponible |
 | 4 | Grupos de logs de CloudWatch con retención infinita | `scripts/04_logs_sin_retencion.py` | máximo | disponible |
-| 5 | NAT Gateway procesando tráfico hacia S3/DynamoDB | — | máximo | en desarrollo |
+| 5 | NAT Gateway procesando tráfico hacia S3/DynamoDB | `scripts/05_nat_sin_endpoints.py` | máximo | disponible |
 
 ## Requisitos
 
@@ -204,6 +204,31 @@ Opción propia:
 
 Aplicar una retención borra datos de forma permanente. Si debes conservarlos, expórtalos antes a S3.
 
+### 5. NAT Gateway procesando tráfico hacia S3/DynamoDB
+
+```bash
+python scripts/05_nat_sin_endpoints.py --profile mi-perfil
+python scripts/05_nat_sin_endpoints.py --profile mi-perfil --dias 90
+```
+
+Opción propia:
+
+| Opción | Qué hace | Valor por defecto |
+|---|---|---|
+| `--dias N` | Días de métricas del NAT que se promedian (1 a 455). | 30 |
+
+**Qué detecta.** NAT Gateways en estado `available` que tienen tablas de rutas apuntando a ellos sin un endpoint gateway de S3 o de DynamoDB asociado.
+
+**Por qué es un desperdicio.** El NAT Gateway cobra cada GB que procesa. El tráfico hacia S3 y DynamoDB puede ir por un endpoint gateway, que no tiene cargo por hora ni por GB. Es común en VPCs donde las cargas privadas leen o escriben mucho en S3: backups, data lakes, imágenes de contenedores.
+
+**Cómo calcula el ahorro (máximo).** GB procesados por el NAT (métricas `BytesInFromSource` + `BytesInFromDestination` de CloudWatch en los últimos `--dias` días, llevados a un mes de 730 horas) × precio por GB procesado. CloudWatch no separa el tráfico por destino, así que el cálculo supone que todo va a S3 o DynamoDB; el ahorro real es igual o menor. Para medir el tráfico real hacia S3, analiza los VPC Flow Logs.
+
+**Comandos sugeridos.** Si falta el endpoint, se sugiere `create-vpc-endpoint` con las tablas de rutas que usan el NAT. Si el endpoint existe pero no está asociado a alguna de esas tablas, se sugiere `modify-vpc-endpoint --add-route-table-ids`.
+
+**Antes de aplicar.** Solo el tráfico hacia S3 o DynamoDB de la misma región pasa por el endpoint. Si alguna política de bucket filtra por IP pública (`aws:SourceIp`), revísala: con el endpoint, el tráfico llega por la red privada.
+
+**Costo de ejecutarlo.** El script hace 2 consultas `GetMetricStatistics` por NAT Gateway. CloudWatch cobra las solicitudes de API: USD 0.01 por cada 1.000 en us-east-1, según el AWS Price List. Los demás scripts solo usan llamadas `Describe*`.
+
 ## Cómo se calcula el ahorro
 
 **Tipo de ahorro.** Cada hallazgo indica uno de dos tipos:
@@ -214,7 +239,7 @@ Aplicar una retención borra datos de forma permanente. Si debes conservarlos, e
 **Origen de los precios.** En este orden:
 
 1. **AWS Pricing API** (`pricing:GetProducts`), consultada en el momento. Es la fuente preferida porque está al día y cubre todas las regiones.
-2. **Tabla local** `config/precios.toml`, si la API no está disponible (falta el permiso, no hay red o usaste `--precios-locales`). Cada precio indica el archivo público del AWS Price List de donde salió, la fecha de publicación y el `usagetype` para que puedas verificarlo. Hoy cubre us-east-1, us-east-2 y sa-east-1.
+2. **Tabla local** `config/precios.toml`, si la API no está disponible (falta el permiso, no hay red o usaste `--precios-locales`). Cubre us-east-1, us-east-2 y sa-east-1: todos los tipos de volumen EBS, snapshots, logs, NAT Gateway, 60 tipos de instancia EC2 Linux comunes y 140 combinaciones de RDS (motor, clase y despliegue). Cada precio indica el archivo público del AWS Price List del que salió, su fecha de publicación y el `usagetype` para que puedas verificarlo. La tabla no se edita a mano: la genera `tools/generar_precios.py` con los mismos filtros que se envían a la Pricing API.
 3. Si ninguna de las dos tiene el precio, el hallazgo aparece como **sin precio** y no suma al total. Ningún script inventa ni aproxima un precio.
 
 La salida siempre lista las fuentes de precios usadas.
@@ -234,6 +259,10 @@ Archivo: [`iam/politica-minima.json`](iam/politica-minima.json). Contiene exacta
 | `ec2:DescribeInstances` | Script 3: listar instancias EC2 y sus etiquetas. |
 | `rds:DescribeDBInstances` | Script 3: listar instancias RDS y sus etiquetas. |
 | `logs:DescribeLogGroups` | Script 4: listar grupos de logs, su retención y su tamaño. |
+| `ec2:DescribeNatGateways` | Script 5: listar NAT Gateways. |
+| `ec2:DescribeRouteTables` | Script 5: encontrar las tablas de rutas que usan cada NAT. |
+| `ec2:DescribeVpcEndpoints` | Script 5: listar endpoints gateway de S3 y DynamoDB. |
+| `cloudwatch:GetMetricStatistics` | Script 5: leer los bytes procesados por cada NAT. |
 | `pricing:GetProducts` | Consultar precios en la AWS Pricing API. Es opcional: sin él se usa la tabla local. |
 
 Para aplicarla, usa el archivo tal cual; no copies la política desde este README.

@@ -5,11 +5,15 @@
       "Sid": "AwsDesperdiciosReadOnly",
       "Effect": "Allow",
       "Action": [
+        "cloudwatch:GetMetricStatistics",
         "ec2:DescribeImages",
         "ec2:DescribeInstances",
+        "ec2:DescribeNatGateways",
         "ec2:DescribeRegions",
+        "ec2:DescribeRouteTables",
         "ec2:DescribeSnapshots",
         "ec2:DescribeVolumes",
+        "ec2:DescribeVpcEndpoints",
         "logs:DescribeLogGroups",
         "pricing:GetProducts",
         "rds:DescribeDBInstances"

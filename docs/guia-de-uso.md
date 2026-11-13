@@ -185,6 +185,12 @@ Para `scripts/04_logs_sin_retencion.py`:
 - Antes de aplicarla, revisa si alguna norma (auditoría, contratos, regulación) exige conservar esos logs. Si es así, expórtalos a S3 y usa una clase de almacenamiento de bajo costo.
 - Elige la retención con `--retencion-dias` para que el comando sugerido ya la incluya.
 
+Para `scripts/05_nat_sin_endpoints.py`:
+
+- Crear un endpoint gateway agrega rutas a las tablas indicadas. No interrumpe conexiones, pero cambia el camino del tráfico hacia S3 o DynamoDB.
+- Revisa antes las políticas de bucket que filtran por IP pública (`aws:SourceIp`) o por VPC (`aws:SourceVpc`, `aws:SourceVpce`).
+- Después de aplicarlo, compara las métricas del NAT durante unos días para medir el ahorro real.
+
 ## 8. Errores comunes
 
 | Mensaje | Causa | Solución |

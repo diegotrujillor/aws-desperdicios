@@ -1,4 +1,4 @@
 """One module per waste check. Each exposes IAM_ACTIONS, CHECK and main()."""
-from aws_desperdicios.checks import dev_schedule, gp2_to_gp3, log_retention, orphan_storage
+from aws_desperdicios.checks import dev_schedule, gp2_to_gp3, log_retention, nat_endpoints, orphan_storage
 
-ALL_CHECKS = (gp2_to_gp3, orphan_storage, dev_schedule, log_retention)
+ALL_CHECKS = (gp2_to_gp3, orphan_storage, dev_schedule, log_retention, nat_endpoints)
