@@ -6,6 +6,12 @@ from typing import Literal
 SavingsKind = Literal["exacto", "máximo"]
 NO_PRICE = "sin precio"
 TABLE_HEADERS = ("Región", "Recurso", "Detalle", "Ahorro USD/mes", "Tipo")
+NOTHING_FOUND = "No se encontraron recursos con este desperdicio en las regiones revisadas."
+INCOMPLETE_EMPTY = (
+    "Resultado incompleto: no se pudo revisar todo (ver Errores). "
+    "Que no aparezcan recursos no significa que no haya desperdicio."
+)
+INCOMPLETE_WARNING = "Resultado incompleto: algunas regiones o consultas fallaron (ver Errores)."
 
 
 @dataclass(frozen=True)
@@ -67,13 +73,14 @@ def render_table(report: Report) -> str:
 
 def _findings_section(report: Report) -> str:
     if not report.findings:
-        return "No se encontraron recursos con este desperdicio en las regiones revisadas."
+        return INCOMPLETE_EMPTY if report.errors else NOTHING_FOUND
     rows = [
         (f.region, f.resource_id, f.detail, _money(f.monthly_savings_usd), f.savings_kind)
         for f in report.findings
     ]
     total = f"Total estimado: {report.total_monthly_savings_usd:.2f} USD/mes"
-    return f"{_format_table(TABLE_HEADERS, rows)}\n\n{total}"
+    section = f"{_format_table(TABLE_HEADERS, rows)}\n\n{total}"
+    return f"{section}\n{INCOMPLETE_WARNING}" if report.errors else section
 
 
 def _optional_sections(report: Report) -> list[str]:

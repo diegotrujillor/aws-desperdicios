@@ -61,6 +61,22 @@ def test_table_reports_when_nothing_was_found():
     assert "No se encontraron recursos" in text
 
 
+def test_empty_report_with_errors_does_not_claim_nothing_was_found():
+    text = render_table(sample_report(findings=()))
+    assert "No se encontraron recursos con este desperdicio" not in text
+    assert "incompleto" in text
+
+
+def test_report_with_findings_and_errors_warns_it_is_incomplete():
+    text = render_table(sample_report())
+    assert "incompleto" in text
+
+
+def test_report_without_errors_is_not_flagged_incomplete():
+    text = render_table(sample_report(errors=()))
+    assert "incompleto" not in text
+
+
 def test_json_is_machine_readable_and_complete():
     data = json.loads(render_json(sample_report()))
 

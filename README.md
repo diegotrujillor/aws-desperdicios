@@ -269,7 +269,7 @@ Para aplicarla, usa el archivo tal cual; no copies la política desde este READM
 
 Una prueba automática verifica que la política coincida exactamente con las llamadas que hacen los scripts y que todas sean de lectura. La [guía de uso](docs/guia-de-uso.md#paso-6-crea-un-acceso-de-solo-lectura) explica cómo aplicarla.
 
-Si un permiso falta, el script lo dice con su nombre exacto, por ejemplo: `Falta el permiso IAM 'ec2:DescribeVolumes'.`
+Si un permiso falta, el script lo dice con su nombre exacto, por ejemplo: `Falta el permiso IAM 'ec2:DescribeVolumes'.` Si lo que bloquea la consulta es una política de la organización (SCP), el mensaje lo indica, porque eso no se corrige en la política IAM. Cuando alguna región o consulta falla, el reporte se marca como incompleto.
 
 ## Códigos de salida
 
