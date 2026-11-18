@@ -10,6 +10,9 @@ ACCESS_DENIED_CODES = frozenset(
 IAM_PREFIX_OVERRIDES = {"monitoring": "cloudwatch"}
 _ACTION_IN_MESSAGE = re.compile(r"perform: ([a-z0-9-]+:[A-Za-z0-9]+)")
 POLICY_HINT = "Agrégalo a la política de solo lectura (ver iam/politica-minima.json)."
+# Fragments AWS includes in AccessDenied messages when a deny (not a missing allow) is the cause.
+EXPLICIT_DENY_MARKER = "with an explicit deny"
+SCP_DENY_MARKER = "explicit deny in a service control policy"
 
 
 class AwsSetupError(Exception):
@@ -48,4 +51,11 @@ def _explain_client_error(error: ClientError, last_action: str | None) -> str:
         return f"Error de AWS en {error.operation_name}: {details.get('Code')} - {message}"
     match = _ACTION_IN_MESSAGE.search(message)
     action = match.group(1) if match else (last_action or error.operation_name)
+    if SCP_DENY_MARKER in message:
+        return (
+            f"Una política de tu organización de AWS (SCP) bloquea '{action}'. "
+            "No se arregla en la política IAM: pide a quien administra la organización que la revise."
+        )
+    if EXPLICIT_DENY_MARKER in message:
+        return f"Una regla de denegación explícita bloquea '{action}'. Mensaje de AWS: {message}"
     return f"Falta el permiso IAM '{action}'. {POLICY_HINT}"

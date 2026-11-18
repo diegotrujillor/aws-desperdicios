@@ -335,6 +335,8 @@ En tu computador, borra el perfil del archivo de credenciales: abre `~/.aws/cred
 | `No existe el perfil 'desperdicios'` | No se guardó el perfil. | Repite el [paso 6.4](#64-guarda-la-clave-en-tu-computador). |
 | `No se encontraron credenciales de AWS.` | Olvidaste `--profile desperdicios`. | Agrégalo al final del comando. |
 | `Falta el permiso IAM '...'` | A la política le falta ese permiso, o es una versión vieja. | Repite el [paso 6.1](#61-crea-la-política-la-lista-de-permisos) con el `iam/politica-minima.json` actual (edita la política existente y pega el contenido nuevo). |
+| `Una política de tu organización de AWS (SCP) bloquea '...'` | Tu cuenta pertenece a una organización de AWS que prohíbe esa consulta. Pasa en empresas con reglas centrales y en cuentas nuevas del plan gratuito. | No se arregla en la política del paso 6.1. Pide a quien administra la organización que permita esas consultas de solo lectura. |
+| `Resultado incompleto: ...` | Algunas regiones o consultas fallaron. | Lee la sección **Errores** del reporte. Que no aparezcan recursos no significa que no haya desperdicio. |
 | `No se usó la AWS Pricing API...` | La política no tiene el permiso de precios. | No es grave: el script usa una tabla de precios incluida. |
 | `Sin precio de ... en la región ...` | No hay precio disponible para esa región. | El recurso aparece igual, pero sin cifra de ahorro. |
 | `InvalidClientTokenId` o `SignatureDoesNotMatch` | La clave se copió mal o fue borrada. | Crea una clave nueva ([paso 6.3](#63-crea-la-clave-de-acceso)) y repite el [paso 6.4](#64-guarda-la-clave-en-tu-computador). |

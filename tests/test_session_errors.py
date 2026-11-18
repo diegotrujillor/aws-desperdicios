@@ -47,6 +47,33 @@ def test_permission_is_taken_from_aws_message_when_present():
     assert "'logs:DescribeLogGroups'" in explain_error(error, last_action="ec2:DescribeVolumes")
 
 
+SCP_DENY_MESSAGE = (
+    "User: arn:aws:iam::123:user/x is not authorized to perform: ec2:DescribeVolumes "
+    "with an explicit deny in a service control policy: "
+    "arn:aws:organizations::999:policy/o-abc/service_control_policy/p-xyz"
+)
+
+
+def test_scp_deny_blames_the_organization_not_the_iam_policy():
+    message = explain_error(client_error("UnauthorizedOperation", SCP_DENY_MESSAGE))
+    assert "'ec2:DescribeVolumes'" in message
+    assert "SCP" in message and "organización" in message
+    assert "Falta el permiso" not in message
+    assert "iam/politica-minima.json" not in message
+
+
+def test_other_explicit_deny_is_not_reported_as_missing_permission():
+    error = client_error(
+        "AccessDeniedException",
+        "User: arn:aws:iam::123:user/x is not authorized to perform: logs:DescribeLogGroups "
+        "on resource: x with an explicit deny in an identity-based policy",
+    )
+    message = explain_error(error)
+    assert "'logs:DescribeLogGroups'" in message
+    assert "denegación explícita" in message
+    assert "Falta el permiso" not in message
+
+
 def test_other_client_errors_show_code_and_message():
     message = explain_error(client_error("Throttling", "Rate exceeded"))
     assert "Throttling" in message and "Rate exceeded" in message
